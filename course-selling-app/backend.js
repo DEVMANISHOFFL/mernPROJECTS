@@ -111,6 +111,37 @@ app.post("/admin/courses", adminAuthentication, async (req,res) => {
     res.json({message: "Course created successfully", courseId: course.id});
 });
 
+app.get("/users/courses", async (req, res) => {
+    const courses = await Course.find({published: true});
+    res.json({courses});
+})
+
+app.post("/users/courses/:courseId", adminAuthentication, async (req, res) => {
+    const course = await Course.findById(req.params.courseId);
+    console.log(course);
+    if(course){
+        const user = await User.findOne({username: req.user.username});
+        if(user){
+            user.purchasedCourses.push(course);
+            await user.save();
+            res.json({message: "Course Purchased Successfully"});
+        }else{
+            res.status(403).json({message: "Invalid User"});
+        }
+    }else{
+        res.status(404).json({message: "Course not found"});
+    }
+})
+
+app.get("/users/purchasedCourses", adminAuthentication, async (req, res) =>{
+    const user = await User.findOne({username: req.user.username }).populate('purchasedCourses');
+    if(user){
+       res.json({purchasedCourses: user.purchasedCourses || []});
+    }else{
+        res.status(404).json("User not found");
+    }
+})
+
 app.listen(port, () =>{
     console.log(`server started at port ${port}`);
 });
